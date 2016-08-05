@@ -1,0 +1,26 @@
+{
+  "name": "shopping bag",
+  "homepage": "http://example.com",
+  "authors": [
+    "Sharad Biradar"
+  ],
+  "description": "Shopping bag module",
+  "main": [
+    "index.html",
+    "public/css/app.css",
+    "public/app.js"
+  ],
+  "keywords": [
+    "css",
+    "js",
+    "html",
+    "responsive"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "/.*",
+    "node_modules",
+    "bower_components",
+    "composer.json"
+  ]
+}

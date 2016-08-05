@@ -1,0 +1,179 @@
+/* css for the cart */
+/* author:  Sharad Biradar*/
+.shoppingbag-cart {
+    font-family:Verdana, sans-serif; /* resist the temptation to stack the fonts */
+    font-weight:normal;
+}
+
+.cart-container .cart-header{
+	color: #aaa;
+    text-transform: uppercase;
+    font-size: 35px;
+    margin-bottom: 40px;
+    padding-top: 32px;
+    padding-left: 20px;
+}
+
+.cartItems {   
+	display: table;   	
+	width: 100%; 
+} 
+.cartItem {   	
+	display: table-row; 
+} 
+ 
+.cartItemCell, .cartItemHead {   	
+	display: table-cell;   	
+	padding: 3px 10px;   	
+	
+}
+.cartItemCell #item-qty{
+	width: 40px;
+}
+.cart-header-container{
+	margin-bottom: 10px;
+}
+
+.cartItem .cartItemCell .cart-item-image-container{
+	width: auto;
+    float: left;
+    padding-right: 25px;
+    width: 150px;
+}
+
+.cartItem .cartItemCell .cart-item-details label.item-name{
+	display: block;
+	color:#aaa;
+	text-transform: uppercase;
+}
+
+.cartItem .cartItemCell .cart-item-details label.item-style{
+	display: block;
+	color:#aaa;
+}
+
+.cartItem .cartItemCell .cart-item-details label.item-colors{
+	display: block;
+	color:#aaa;
+}
+.cart-edit-btns{
+	margin-top: 30px;
+	color: #aaa;
+
+}
+.cart-edit-btns .edit, .cart-edit-btns .remove, .cart-edit-btns .save{
+	text-decoration: underline;
+	cursor:pointer;
+}
+
+
+/*  car dialog box css  */
+.cart-dialog-body .item-details{
+	float: left;
+	width: 300px;
+	text-align: center;
+	display: table-cell;
+}
+
+.cart-dialog-body .item-details{
+	color: #aaa;
+	padding-top: 50px;
+}
+
+.cart-dialog-body .item-details .item-name{
+	text-transform: uppercase;
+	font-size: 30px;
+    padding-bottom: 25px;
+}
+
+.cart-dialog-body .item-details .item-price{
+	font-size: 40px;
+	color:black;
+	padding-bottom: 25px;
+}
+
+.cart-dialog-body .item-details .item-colors .color-box{
+	width: 30px;
+	height: 30px;
+}
+
+.cart-dialog-body .item-image img{
+	width: 200px;
+    height: 350px;
+}
+
+.cart-dialog-body .item-image{
+	float: right;
+}
+
+.color-box{
+	width: 20px;
+	height: 20px;
+	display: inline-block;
+	cursor: pointer;
+}
+
+.cart-dialog-body .edit-item-btn{
+	width:100px;
+	height: 40px;
+	background-color: blue;
+	line-height: 40px;
+	color: #fff;
+	cursor: pointer;
+	margin-top: 20px;
+	display: inline-block;
+}
+
+.cart-dialog-body .colors-title{
+	margin-bottom: 10px;
+}
+
+.cart-dialog-body .product-details{
+	margin-top: 10px;
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/*
+	Select styling
+*/
+
+.size-select-style {
+    border: 1px solid #ccc;
+    width: 120px;
+    border-radius: 0px;
+    overflow: hidden;
+    background: #fff url("../dist/image/icon-select.png") no-repeat 98% 50%;
+    background-size: 30px 30px;
+    display: inline-block;
+    float: left;
+    margin-right: 20px;
+    margin-top: 20px;
+}
+
+.size-select-style select {
+    padding: 5px 8px;
+    width: 120px;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    background-image: none;
+    -webkit-appearance: none;
+    color: #aaa;
+}
+
+.size-select-style select:focus {
+    outline: none;
+}
+
+.ion-bag:before{
+	font-size: 60px;
+}
+
+.cart-icon .cart-size{
+	position: absolute;
+    margin-top: -59px;
+    margin-left: 17px;
+    font-size: 30px;
+}

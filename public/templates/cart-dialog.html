@@ -1,0 +1,41 @@
+<div class="cart-dialog-body">
+	<div class="item-details">
+		<div class="item-name">{{p_name}}</div>
+		<div class="item-price">{{c_currency}}{{p_price}}</div>
+		<div class="item-colors">
+			<div class="colors-title">Colors:</div>
+			{{#each p_available_options.colors}}
+				<!--<label style="background-color:'+color+'"></label>-->
+				{{availableColors this}}
+			{{/each}}
+		</div>
+		<div class="item-size-qty">
+			<div class="size-select-style">
+			  <select>
+			  	<option value="">Size</option>
+			  	{{#each p_available_options.sizes}}
+			  		{{createOptions this}}
+				{{/each}}
+			  </select>
+			</div>
+
+			<div class="size-select-style">
+			  <select>
+			  	<option value="">Qty</option>
+			  	{{#each p_available_options.sizes}}
+			  		{{createOptions this}}
+				{{/each}}
+			  </select>
+			</div>
+			<!--<div class="item-qty">Quantity</div>-->
+		</div>
+
+		<div class="edit-item-btn">Edit</div>
+		<div class="product-details">See product details</div>
+	</div>
+	<div class="item-image">
+		<!--<img src="../dist/image/P1.jpg"></img>-->
+		<img src="{{image_link}}"></img>
+	</div>
+</div>
+

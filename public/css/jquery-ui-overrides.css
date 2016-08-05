@@ -1,0 +1,24 @@
+/*
+------------------------------------
+Dialog
+------------------------------------
+*/
+.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.ui-resizable{
+	background: #fff;
+	border:#fff;
+}
+.ui-dialog .ui-dialog-titlebar{
+	/*background: none;
+    border: none;*/
+    background: #fff;
+    border: #fff;
+}
+
+.ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default{
+	border:none;
+}
+
+
+.ui-widget-overlay.ui-front{
+	background:#aaa;
+}

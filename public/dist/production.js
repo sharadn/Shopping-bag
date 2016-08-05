@@ -1,0 +1,1194 @@
+// shoppingbag cart
+// author:  Sharad Biradar
+// ensure our namespace
+if (!this.shoppingbag) {
+    this.shoppingbag = {};
+}
+
+// IE9 bug fix
+if (!window.console) {
+    window.console = {};
+}
+
+if (!window.console.log) {
+    window.console.log = function () {};
+}
+// depends: jQuery >=1.9.0, jQuery UI Widget >=1.10.0
+
+
+(function (shoppingbag, $, undefined) {
+
+    $.widget("shoppingbag.cart", {
+        // public class variables go here
+        version: "0.1.0", // http://semver.org
+        // public instance variables are in options
+        options: {
+            title: 'Title',
+            instance: {
+                element: undefined, // filled in during create
+                namespace: 'shoppingbag',
+                name: 'cart',
+                tool: undefined // filled in during create
+            },
+            // callbacks
+            create: function (event, data) {
+                // pass a callback,or simply bind on the "cart:create" event, or both
+                //console.log(event, '--callback create event')
+                //console.log(data, '--callback create data')
+            },
+            change: function (event, data) {
+                // pass a callback,or simply bind on the "cart:change" event, or both
+                //console.log(event, '--callback change event');
+                //console.log(data, '--callback change data');
+            },
+            destroy: function (event, data) {
+                // pass a callback,or simply bind on the "cart:destroy" event, or both
+                //console.log(event, '--callback destroy event');
+                //console.log(data, '--callback destroy data');
+            }
+        },
+
+        // public methods
+        setTitle: function (title) {
+            this._setOption('title', title);
+        },
+
+        // private methods begin with an underscore
+        // jQuery UI Widget override
+        _create: function () {
+            this.options.instance.element = this.element;
+            this.options.instance.tool = this;
+            // private instance variables begin with an underscore
+            this._elementMap = {};
+            // prepare for post 1.9, event prefix is separated with a colon
+            if (this.widgetEventPrefix && this.widgetEventPrefix[this.widgetEventPrefix.length - 1] !== ':') {
+                this.widgetEventPrefix = this.widgetEventPrefix + ':';
+            }
+            // the "ui-widget" class declares it a jQuery UI widget
+            this.element.addClass(this.widgetFullName + ' ui-widget');
+            // inject DOM elements and bind event handlers
+            this._initView();
+        },
+
+        _initView:function(){
+            var self = this;
+            var path = "templates/cart.html";
+            var templatePromise = shoppingbag.app.getTemplate(path);
+            var cartPromise = self._getCartData();
+
+            $.when(templatePromise, cartPromise).fail(function(jqXHR, textStatus, errorThrown){
+                console.log('Render caer failed:', textStatus, errorThrown);
+            }).done(function(templateResp, cartResponse){
+                var template = Handlebars.compile(templateResp[0]);
+                var context = cartResponse[0].productsInCart;
+                console.log('template:', template);
+                console.log('cartResponse:', context);
+                var result = {
+                    results:context
+                };
+                self.element.append(template(result));
+                self._bindEvents();
+            });
+        },
+
+        _getCartData:function(){
+            var self = this;
+            var cartPromise = $.ajax({
+                url:"./data/cart.json",
+                method:'GET'
+                //dataType:'json'
+            });
+            return cartPromise;
+        },
+
+        _bindEvents:function(){
+            var self = this;
+            var cartBtnContainer = self.element.find('.cart-container .cart-edit-btns');
+            var cartItemRow = $(cartBtnContainer).find('.edit');
+            $(cartItemRow).on('click', function(event){
+                self._showCartDialog(event);
+            });
+        },
+
+        _showCartDialog:function(event){
+            var itemData = $(event.target).parents('.cartItem.cart-item-row').attr('data');
+            itemData = JSON.parse(itemData);
+            var path = "templates/cart-dialog.html";
+            var templatePromise = shoppingbag.app.getTemplate(path);
+            templatePromise.fail(function(jqXHR, textStatus, errorThrown){
+                console.log('error in getting template for cart dialog:', errorThrown);
+            }).done(function(templateResponse){
+                var template = Handlebars.compile(templateResponse);
+                var context = itemData;
+                shoppingbag.app.dialog({
+                    template:template(context),
+                    dialogOptions:{
+                        modal: true,
+                        draggable: false,
+                        width:600,
+                        height:500
+                    }
+                });
+            });
+        },
+        
+        // jQuery UI Widget override
+        _getCreateEventData: function () {
+            // data object to be returned by the "create" event
+            var createDataObject = {};
+            return createDataObject;
+        },
+
+        _fireChangeEvent: function () {
+            // the event handler looks like this:
+            // function(event, data) {};
+            var eventName = 'change';
+            this._trigger(eventName, null, this._getChangeEventData());
+        },
+
+        _getChangeEventData: function () {
+            // data object to be returned by the "change" event
+            var changeDataObject = {};
+            return changeDataObject;
+        },
+
+        // jQuery UI Widget override
+        _destroy: function () {
+            this._trigger('destroy', null, this._getDestroyEventData());
+            this.element.removeClass(this.widgetFullName + ' ui-widget');
+            this.element.empty();
+        },
+
+        _getDestroyEventData: function () {
+            // data object to be returned by the "destroy" event
+            var destroyDataObject = {};
+            return destroyDataObject;
+        },
+
+        // JQuery UI Widget override
+        _setOption: function (key, value) {
+            // do anything special here, before calling the superclass
+            this._super(key, value);
+        },
+
+        _getElement: function (name) {
+            return this._elementMap[name];
+        },
+
+        _createTables: function (names) {
+            // cache some tables to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                var table = this._elementMap[name] = $('<table width="100%" class="' + this.widgetFullName + '-' + name + '"></table>');
+                var header = this._elementMap[name + '-thead'] = $('<thead></thead>');
+                var footer = this._elementMap[name + '-tfoot'] = $('<tfoot></tfoot>');
+                var body = this._elementMap[name + '-tbody'] = $('<tbody></tbody>');
+                var jsonString = '{"' + name + '":["' + name + '-thead", "' + name + '-tfoot", "' + name + '-tbody"]}';
+                var jsObject = JSON.parse(jsonString);
+                this._injectHtml(jsObject);
+            }
+            return this;
+        },
+
+        _createDivs: function (names) {
+            // cache some divs to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                this._elementMap[name] = $('<div class="' + this.widgetFullName + '-' + name + '"></div>');
+            }
+            return this;
+        },
+
+        _createSpans: function (names) {
+            // cache some spans to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                this._elementMap[name] = $('<span class="' + this.widgetFullName + '-' + name + '"></span>');
+            }
+            return this;
+        },
+
+        /*
+         * fast helper for injecting elements into the other elements
+         *
+         * input parameter is a map with the keys being parents
+         * and the values being children (either single or an array)
+         * such as: this._injectHtml({'parent':['one', 'two', 'three']});
+         */
+        _injectHtml: function (elements) {
+            var parent;
+            var child;
+            for (var i in elements) {
+                if (elements.hasOwnProperty(i)) {
+                    if (elements[i].constructor === Array) {
+                        for (var j = 0; elements[i][j]; j++) {
+                            parent = this._elementMap[i];
+                            child = this._elementMap[elements[i][j]];
+                            if (parent && child) {
+                                parent.append(child);
+                            }
+                        }
+                    } else {
+                        parent = this._elementMap[i];
+                        child = this._elementMap[elements[i]];
+                        if (parent && child) {
+                            parent.append(child);
+                        }
+                    }
+                }
+            }
+            return this;
+        },
+
+        // clears out existing style (if any) and sets the style attribute to the passed parameter
+        _setStyle: function (cachedElementKey, style) {
+            var element = this._getElement(cachedElementKey);
+            if (element) {
+                element.removeAttr('style');
+                element.attr('style', ''); // bug fix
+                element.attr('style', style);
+            }
+        }
+    });
+})(this.shoppingbag, jQuery);
+// shoppingbag footer
+// author: Sharad Biradar 
+// ensure our namespace
+if (!this.shoppingbag) {
+    this.shoppingbag = {};
+}
+// IE9 bug fix
+if (!window.console) {
+    window.console = {};
+}
+if (!window.console.log) {
+    window.console.log = function () {};
+}
+// depends: jQuery >=1.9.0, jQuery UI Widget >=1.10.0
+
+
+(function (shoppingbag, $, undefined) {
+    $.widget("shoppingbag.footer", {
+        // public class variables go here
+        version: "0.1.0", // http://semver.org
+        // public instance variables are in options
+        options: {
+            title: 'Title',
+            instance: {
+                element: undefined, // filled in during create
+                namespace: 'shoppingbag',
+                name: 'footer',
+                tool: undefined // filled in during create
+            },
+            // callbacks
+            create: function (event, data) {
+                // pass a callback,or simply bind on the "footer:create" event, or both
+                //console.log(event, '--callback create event')
+                //console.log(data, '--callback create data')
+            },
+            change: function (event, data) {
+                // pass a callback,or simply bind on the "footer:change" event, or both
+                //console.log(event, '--callback change event');
+                //console.log(data, '--callback change data');
+            },
+            destroy: function (event, data) {
+                // pass a callback,or simply bind on the "footer:destroy" event, or both
+                //console.log(event, '--callback destroy event');
+                //console.log(data, '--callback destroy data');
+            }
+        },
+
+        // public methods
+        setTitle: function (title) {
+            this._setOption('title', title);
+        },
+
+        // private methods begin with an underscore
+        // jQuery UI Widget override
+        _create: function () {
+            this.options.instance.element = this.element;
+            this.options.instance.tool = this;
+            // private instance variables begin with an underscore
+            this._elementMap = {};
+            // prepare for post 1.9, event prefix is separated with a colon
+            if (this.widgetEventPrefix && this.widgetEventPrefix[this.widgetEventPrefix.length - 1] !== ':') {
+                this.widgetEventPrefix = this.widgetEventPrefix + ':';
+            }
+            // the "ui-widget" class declares it a jQuery UI widget
+            this.element.addClass(this.widgetFullName + ' ui-widget');
+            // inject DOM elements and bind event handlers
+
+            this._initFooter();
+        },
+
+        _initFooter: function(){
+            var self = this;
+            var path = "templates/footer.html";
+            var templatePromise = shoppingbag.app.getTemplate(path);
+            templatePromise.fail(function(jqXHR, textStatus, errorThrown){
+                console.log('_renderTable error:', textStatus, errorThrown);
+            }).done(function(templateResp){
+                console.log('footer templateResp:', templateResp);
+                var template = Handlebars.compile(templateResp);
+                self.element.append(template);
+            });
+        },
+
+        // jQuery UI Widget override
+        _getCreateEventData: function () {
+            // data object to be returned by the "create" event
+            var createDataObject = {};
+            return createDataObject;
+        },
+
+        _fireChangeEvent: function () {
+            // the event handler looks like this:
+            // function(event, data) {};
+            var eventName = 'change';
+            this._trigger(eventName, null, this._getChangeEventData());
+        },
+
+        _getChangeEventData: function () {
+            // data object to be returned by the "change" event
+            var changeDataObject = {};
+            return changeDataObject;
+        },
+
+        // jQuery UI Widget override
+        _destroy: function () {
+            this._trigger('destroy', null, this._getDestroyEventData());
+            this.element.removeClass(this.widgetFullName + ' ui-widget');
+            this.element.empty();
+        },
+
+        _getDestroyEventData: function () {
+            // data object to be returned by the "destroy" event
+            var destroyDataObject = {};
+            return destroyDataObject;
+        },
+
+        // JQuery UI Widget override
+        _setOption: function (key, value) {
+            // do anything special here, before calling the superclass
+            this._super(key, value);
+        },
+
+        _getElement: function (name) {
+            return this._elementMap[name];
+        },
+
+        _createTables: function (names) {
+            // cache some tables to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                var table = this._elementMap[name] = $('<table width="100%" class="' + this.widgetFullName + '-' + name + '"></table>');
+                var header = this._elementMap[name + '-thead'] = $('<thead></thead>');
+                var footer = this._elementMap[name + '-tfoot'] = $('<tfoot></tfoot>');
+                var body = this._elementMap[name + '-tbody'] = $('<tbody></tbody>');
+                var jsonString = '{"' + name + '":["' + name + '-thead", "' + name + '-tfoot", "' + name + '-tbody"]}';
+                var jsObject = JSON.parse(jsonString);
+                this._injectHtml(jsObject);
+            }
+            return this;
+        },
+
+        _createDivs: function (names) {
+            // cache some divs to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                this._elementMap[name] = $('<div class="' + this.widgetFullName + '-' + name + '"></div>');
+            }
+            return this;
+        },
+
+        _createSpans: function (names) {
+            // cache some spans to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                this._elementMap[name] = $('<span class="' + this.widgetFullName + '-' + name + '"></span>');
+            }
+            return this;
+        },
+
+        /*
+         * fast helper for injecting elements into the other elements
+         *
+         * input parameter is a map with the keys being parents
+         * and the values being children (either single or an array)
+         * such as: this._injectHtml({'parent':['one', 'two', 'three']});
+         */
+        _injectHtml: function (elements) {
+            var parent;
+            var child;
+            for (var i in elements) {
+                if (elements.hasOwnProperty(i)) {
+                    if (elements[i].constructor === Array) {
+                        for (var j = 0; elements[i][j]; j++) {
+                            parent = this._elementMap[i];
+                            child = this._elementMap[elements[i][j]];
+                            if (parent && child) {
+                                parent.append(child);
+                            }
+                        }
+                    } else {
+                        parent = this._elementMap[i];
+                        child = this._elementMap[elements[i]];
+                        if (parent && child) {
+                            parent.append(child);
+                        }
+                    }
+                }
+            }
+            return this;
+        },
+
+        // clears out existing style (if any) and sets the style attribute to the passed parameter
+        _setStyle: function (cachedElementKey, style) {
+            var element = this._getElement(cachedElementKey);
+            if (element) {
+                element.removeAttr('style');
+                element.attr('style', ''); // bug fix
+                element.attr('style', style);
+            }
+        }
+    });
+})(this.shoppingbag, jQuery);
+// shoppingbag header
+// author: Sharad Biradar 
+// ensure our namespace
+if (!this.shoppingbag) {
+    this.shoppingbag = {};
+}
+// IE9 bug fix
+if (!window.console) {
+    window.console = {};
+}
+if (!window.console.log) {
+    window.console.log = function () {};
+}
+// depends: jQuery >=1.9.0, jQuery UI Widget >=1.10.0
+
+
+(function (shoppingbag, $, undefined) {
+    $.widget("shoppingbag.header", {
+        // public class variables go here
+        version: "0.1.0", // http://semver.org
+        // public instance variables are in options
+        options: {
+            title: 'Title',
+            userId:undefined,
+            userName:undefined,
+            userType:undefined,
+            instance: {
+                element: undefined, // filled in during create
+                namespace: 'shoppingbag',
+                name: 'header',
+                tool: undefined // filled in during create
+            },
+            // callbacks
+            create: function (event, data) {
+                // pass a callback,or simply bind on the "header:create" event, or both
+                //console.log(event, '--callback create event')
+                //console.log(data, '--callback create data')
+            },
+            change: function (event, data) {
+                // pass a callback,or simply bind on the "header:change" event, or both
+                //console.log(event, '--callback change event');
+                //console.log(data, '--callback change data');
+            },
+            destroy: function (event, data) {
+                // pass a callback,or simply bind on the "header:destroy" event, or both
+                //console.log(event, '--callback destroy event');
+                //console.log(data, '--callback destroy data');
+            }
+        },
+
+        // public methods
+        setTitle: function (title) {
+            this._setOption('title', title);
+        },
+
+        // private methods begin with an underscore
+        // jQuery UI Widget override
+        _create: function () {
+            this.options.instance.element = this.element;
+            this.options.instance.tool = this;
+            // private instance variables begin with an underscore
+            this._elementMap = {};
+            // prepare for post 1.9, event prefix is separated with a colon
+            if (this.widgetEventPrefix && this.widgetEventPrefix[this.widgetEventPrefix.length - 1] !== ':') {
+                this.widgetEventPrefix = this.widgetEventPrefix + ':';
+            }
+            // the "ui-widget" class declares it a jQuery UI widget
+            this.element.addClass(this.widgetFullName + ' ui-widget');
+            // inject DOM elements and bind event handlers
+            this._initHeader();
+        },
+        
+        _initHeader:function(){
+            var self = this;
+            var path = "templates/header.html";
+            var templatePromise = shoppingbag.app.getTemplate(path);
+            var cartDataPromise = self._getCartSize();
+            $.when(templatePromise, cartDataPromise).fail(function(jqXHR, textStatus, errorThrown){
+                console.log('_renderTable error:', textStatus, errorThrown);
+            }).done(function(templateResp, cartResponse){
+                var template = Handlebars.compile(templateResp[0]);
+                var context = {size: cartResponse[0].productsInCart.length};
+                self.element.append(template(context));
+                self._bindEvents();
+            });
+        },
+
+        _getCartSize:function(){
+            var self = this;
+            var cartPromise = $.ajax({
+                url:"./data/cart.json",
+                method:'GET'
+                //dataType:'json'
+            });
+            return cartPromise;
+        },
+
+        _bindEvents:function(){
+            var cartIcon = this.element.find('.cart-icon');
+            $(cartIcon).on('click', function(event){
+                shoppingbag.app.setPreviousHash('home');
+                shoppingbag.app.setState('cart');
+            });
+        },
+
+        // jQuery UI Widget override
+        _getCreateEventData: function () {
+            // data object to be returned by the "create" event
+            var createDataObject = {};
+            return createDataObject;
+        },
+
+        _fireChangeEvent: function () {
+            // the event handler looks like this:
+            // function(event, data) {};
+            var eventName = 'change';
+            this._trigger(eventName, null, this._getChangeEventData());
+        },
+
+        _getChangeEventData: function () {
+            // data object to be returned by the "change" event
+            var changeDataObject = {};
+            return changeDataObject;
+        },
+
+        // jQuery UI Widget override
+        _destroy: function () {
+            this._trigger('destroy', null, this._getDestroyEventData());
+            this.element.removeClass(this.widgetFullName + ' ui-widget');
+            this.element.empty();
+        },
+
+        _getDestroyEventData: function () {
+            // data object to be returned by the "destroy" event
+            var destroyDataObject = {};
+            return destroyDataObject;
+        },
+
+        // JQuery UI Widget override
+        _setOption: function (key, value) {
+            // do anything special here, before calling the superclass
+            this._super(key, value);
+        },
+
+        _getElement: function (name) {
+            return this._elementMap[name];
+        },
+
+        _createTables: function (names) {
+            // cache some tables to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                var table = this._elementMap[name] = $('<table width="100%" class="' + this.widgetFullName + '-' + name + '"></table>');
+                var header = this._elementMap[name + '-thead'] = $('<thead></thead>');
+                var footer = this._elementMap[name + '-tfoot'] = $('<tfoot></tfoot>');
+                var body = this._elementMap[name + '-tbody'] = $('<tbody></tbody>');
+                var jsonString = '{"' + name + '":["' + name + '-thead", "' + name + '-tfoot", "' + name + '-tbody"]}';
+                var jsObject = JSON.parse(jsonString);
+                this._injectHtml(jsObject);
+            }
+            return this;
+        },
+
+        _createDivs: function (names) {
+            // cache some divs to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                this._elementMap[name] = $('<div class="' + this.widgetFullName + '-' + name + '"></div>');
+            }
+            return this;
+        },
+
+        _createSpans: function (names) {
+            // cache some spans to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                this._elementMap[name] = $('<span class="' + this.widgetFullName + '-' + name + '"></span>');
+            }
+            return this;
+        },
+
+        /*
+         * fast helper for injecting elements into the other elements
+         *
+         * input parameter is a map with the keys being parents
+         * and the values being children (either single or an array)
+         * such as: this._injectHtml({'parent':['one', 'two', 'three']});
+         */
+        _injectHtml: function (elements) {
+            var parent;
+            var child;
+            for (var i in elements) {
+                if (elements.hasOwnProperty(i)) {
+                    if (elements[i].constructor === Array) {
+                        for (var j = 0; elements[i][j]; j++) {
+                            parent = this._elementMap[i];
+                            child = this._elementMap[elements[i][j]];
+                            if (parent && child) {
+                                parent.append(child);
+                            }
+                        }
+                    } else {
+                        parent = this._elementMap[i];
+                        child = this._elementMap[elements[i]];
+                        if (parent && child) {
+                            parent.append(child);
+                        }
+                    }
+                }
+            }
+            return this;
+        },
+
+        // clears out existing style (if any) and sets the style attribute to the passed parameter
+        _setStyle: function (cachedElementKey, style) {
+            var element = this._getElement(cachedElementKey);
+            if (element) {
+                element.removeAttr('style');
+                element.attr('style', ''); // bug fix
+                element.attr('style', style);
+            }
+        }
+
+    });
+})(this.shoppingbag, jQuery);
+// shoppingbag home
+// author:  
+// ensure our namespace
+if (!this.shoppingbag) {
+    this.shoppingbag = {};
+}
+
+// IE9 bug fix
+if (!window.console) {
+    window.console = {};
+}
+
+if (!window.console.log) {
+    window.console.log = function () {};
+}
+// depends: jQuery >=1.9.0, jQuery UI Widget >=1.10.0
+
+
+(function (shoppingbag, $, undefined) {
+
+    $.widget("shoppingbag.home", {
+        // public class variables go here
+        version: "0.1.0", // http://semver.org
+        // public instance variables are in options
+        options: {
+            title: 'Title',
+            instance: {
+                element: undefined, // filled in during create
+                namespace: 'shoppingbag',
+                name: 'home',
+                tool: undefined // filled in during create
+            },
+            // callbacks
+            create: function (event, data) {
+                // pass a callback,or simply bind on the "home:create" event, or both
+                //console.log(event, '--callback create event')
+                //console.log(data, '--callback create data')
+            },
+            change: function (event, data) {
+                // pass a callback,or simply bind on the "home:change" event, or both
+                //console.log(event, '--callback change event');
+                //console.log(data, '--callback change data');
+            },
+            destroy: function (event, data) {
+                // pass a callback,or simply bind on the "home:destroy" event, or both
+                //console.log(event, '--callback destroy event');
+                //console.log(data, '--callback destroy data');
+            }
+        },
+
+        // public methods
+        setTitle: function (title) {
+            this._setOption('title', title);
+        },
+
+        // private methods begin with an underscore
+        // jQuery UI Widget override
+        _create: function () {
+            this.options.instance.element = this.element;
+            this.options.instance.tool = this;
+            // private instance variables begin with an underscore
+            this._elementMap = {};
+            // prepare for post 1.9, event prefix is separated with a colon
+            if (this.widgetEventPrefix && this.widgetEventPrefix[this.widgetEventPrefix.length - 1] !== ':') {
+                this.widgetEventPrefix = this.widgetEventPrefix + ':';
+            }
+            // the "ui-widget" class declares it a jQuery UI widget
+            this.element.addClass(this.widgetFullName + ' ui-widget');
+            // inject DOM elements and bind event handlers
+            this._initView();
+        },
+
+        _initView:function(){
+            this.element.empty();
+            this.element.append('<h2>Please click on cart number you see in header</h2>');
+        },
+
+        // jQuery UI Widget override
+        _getCreateEventData: function () {
+            // data object to be returned by the "create" event
+            var createDataObject = {};
+            return createDataObject;
+        },
+
+        _fireChangeEvent: function () {
+            // the event handler looks like this:
+            // function(event, data) {};
+            var eventName = 'change';
+            this._trigger(eventName, null, this._getChangeEventData());
+        },
+
+        _getChangeEventData: function () {
+            // data object to be returned by the "change" event
+            var changeDataObject = {};
+            return changeDataObject;
+        },
+
+        // jQuery UI Widget override
+        _destroy: function () {
+            this._trigger('destroy', null, this._getDestroyEventData());
+            this.element.removeClass(this.widgetFullName + ' ui-widget');
+            this.element.empty();
+        },
+
+        _getDestroyEventData: function () {
+            // data object to be returned by the "destroy" event
+            var destroyDataObject = {};
+            return destroyDataObject;
+        },
+
+        // JQuery UI Widget override
+        _setOption: function (key, value) {
+            // do anything special here, before calling the superclass
+            this._super(key, value);
+        },
+
+        _getElement: function (name) {
+            return this._elementMap[name];
+        },
+
+        _createTables: function (names) {
+            // cache some tables to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                var table = this._elementMap[name] = $('<table width="100%" class="' + this.widgetFullName + '-' + name + '"></table>');
+                var header = this._elementMap[name + '-thead'] = $('<thead></thead>');
+                var footer = this._elementMap[name + '-tfoot'] = $('<tfoot></tfoot>');
+                var body = this._elementMap[name + '-tbody'] = $('<tbody></tbody>');
+                var jsonString = '{"' + name + '":["' + name + '-thead", "' + name + '-tfoot", "' + name + '-tbody"]}';
+                var jsObject = JSON.parse(jsonString);
+                this._injectHtml(jsObject);
+            }
+            return this;
+        },
+
+        _createDivs: function (names) {
+            // cache some divs to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                this._elementMap[name] = $('<div class="' + this.widgetFullName + '-' + name + '"></div>');
+            }
+            return this;
+        },
+
+        _createSpans: function (names) {
+            // cache some spans to be injected/removed later
+            var argumentsLength = arguments.length;
+            for (var i = 0; i < argumentsLength; i++) {
+                var name = arguments[i];
+                this._elementMap[name] = $('<span class="' + this.widgetFullName + '-' + name + '"></span>');
+            }
+            return this;
+        },
+
+        /*
+         * fast helper for injecting elements into the other elements
+         *
+         * input parameter is a map with the keys being parents
+         * and the values being children (either single or an array)
+         * such as: this._injectHtml({'parent':['one', 'two', 'three']});
+         */
+        _injectHtml: function (elements) {
+            var parent;
+            var child;
+            for (var i in elements) {
+                if (elements.hasOwnProperty(i)) {
+                    if (elements[i].constructor === Array) {
+                        for (var j = 0; elements[i][j]; j++) {
+                            parent = this._elementMap[i];
+                            child = this._elementMap[elements[i][j]];
+                            if (parent && child) {
+                                parent.append(child);
+                            }
+                        }
+                    } else {
+                        parent = this._elementMap[i];
+                        child = this._elementMap[elements[i]];
+                        if (parent && child) {
+                            parent.append(child);
+                        }
+                    }
+                }
+            }
+            return this;
+        },
+
+        // clears out existing style (if any) and sets the style attribute to the passed parameter
+        _setStyle: function (cachedElementKey, style) {
+            var element = this._getElement(cachedElementKey);
+            if (element) {
+                element.removeAttr('style');
+                element.attr('style', ''); // bug fix
+                element.attr('style', style);
+            }
+        }
+    });
+})(this.shoppingbag, jQuery);
+// app initializing code for app.
+// author: Sharad Biradar
+
+// ensure our namespace
+if (!this.shoppingbag) {
+    this.shoppingbag = {};
+}
+
+if (!this.shoppingbag.app) {
+    this.shoppingbag.app = {};
+}
+
+if (!this.shoppingbag.app.promise) {
+    this.shoppingbag.app.promise = {};
+}
+
+(function (shoppingbag, $) {
+    var body = $('body');
+    var mainContainer = $(body).find('.content-wrapper section.content');
+
+    //Load these scopes from the databaase.
+    shoppingbag.app.possibleStates = ['login','home','cart','pagenotfound','logout'];
+    shoppingbag.app.previousHash = '';
+
+    shoppingbag.app.globalAjaxSetup = function(){
+        //all the requests content/payload is json
+        //We are sending json type payload throught the application.
+        $.ajaxSetup({
+            contentType: 'application/json'
+        });
+
+        //Set Authorization for each request made in future globally.
+        var setGlobalAuthenticationHeader = function(payload) {
+            $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+                var token = localStorage.getItem("auth-token");
+                var userDetails = localStorage.getItem("user-details");
+                if(token){
+                    jqXHR.setRequestHeader("Authorization", 'Bearer ' +token);
+                    jqXHR.setRequestHeader("userData", userDetails);
+                }
+            });
+        }();
+    }();
+
+    shoppingbag.app.setupStartingPage = function(){
+        var authToken =  shoppingbag.app.getLocalStorage('auth-token');
+        if(authToken){
+            window.location.href = "index.html";
+        }
+    };
+
+    shoppingbag.app.getLocalStorage = function(key){
+        return localStorage.getItem(key);
+    };
+
+    shoppingbag.app.setLocalStorage = function(key, value){
+        localStorage.setItem(key, value);
+    };
+
+    shoppingbag.app.init = function() {
+        var authToken =  shoppingbag.app.getLocalStorage('auth-token');
+        authToken = "j&*#.dfjkk.jdg123";
+        var initialState = shoppingbag.app.getState() || "home"; //intentionally making default state as home othrwise login
+        if (initialState && shoppingbag.app.possibleStates.indexOf(initialState) >=0) {
+            initialState = 'home';
+            shoppingbag.app.setPreviousHash('home');
+            shoppingbag.app.setState('home');
+            shoppingbag.app.setUpUI(); 
+        } else {
+            initialState = 'login';
+            shoppingbag.app.setPreviousHash('login');
+            shoppingbag.app.setState('login');
+        }
+        //For further hash routing.
+        $(window).on("hashchange", function (event) {
+            var previousState = shoppingbag.app.getPreviousHash();
+            var scope = shoppingbag.app.getState();
+            var authToken =  shoppingbag.app.getLocalStorage('auth-token');
+            authToken = "j&*#.dfjkk.jdg123";
+            if(authToken){
+                if (scope && shoppingbag.app.possibleStates.indexOf(scope) >= 0) {
+                    if(shoppingbag.app.previousHash !== scope){
+                        shoppingbag.app.routes.routeMap[previousState].destroy(previousState);
+                    }
+                    shoppingbag.app.setPreviousHash(scope);
+                    shoppingbag.app.routes.routeMap[scope].create(scope);
+                } else {
+                    //module doesnot exists or you do not have permissions
+                    shoppingbag.app.routes.routeMap[previousState].destroy(previousState);
+                    scope = 'pagenotfound';
+                    shoppingbag.app.setPreviousHash(scope);
+                    shoppingbag.app.routes.routeMap[scope].create(scope);
+                }
+            }else{
+                scope = "login";
+                shoppingbag.app.setPreviousHash(scope);
+                shoppingbag.app.routes.routeMap[scope].create(scope);
+            }
+        }).trigger('hashchange');
+        //shoppingbag.app.setUpUI();
+    };
+
+    shoppingbag.app.setUpUI = function(){
+        shoppingbag.app.showheader();
+        shoppingbag.app.showFooter();
+    };
+
+    shoppingbag.app.showheader = function(){
+        var header = $(body).find('header.main-header');
+        var userName;
+        var userId;
+        var userType;
+        if(localStorage.getItem('user-details')){
+            var userDetails = JSON.parse(localStorage.getItem('user-details'));
+            userName = userDetails.userName;
+            userId = userDetails.id;
+        }
+
+        $(header).empty();
+        $(header).header({
+            userId:userId,
+            userName:userName,
+            userType:userType
+        });
+        
+    };
+
+    shoppingbag.app.showFooter = function(){
+        var footer = $(body).find('footer.main-footer');
+        $(footer).empty();
+        $(footer).footer();
+    };
+
+    shoppingbag.app.getState = function () {
+        var hashValues = window.location.hash.substring(1).split("/"); // Skip the starting "#"
+        console.log('get State:', hashValues[0]);
+        return hashValues[0];
+    };
+
+    shoppingbag.app.setState = function (state) {
+        window.location.hash = state;
+    };
+
+    shoppingbag.app.setPreviousHash = function(hashValue){
+        shoppingbag.app.previousHash = hashValue;
+    };
+
+    shoppingbag.app.getPreviousHash = function(hashValue){
+        return shoppingbag.app.previousHash;
+    };
+
+    shoppingbag.app.getTemplate = function(path){
+        return $.ajax({
+            url: path,
+            cache: true
+        });
+    };
+
+    //move this to routes.js
+    shoppingbag.app.hashRoutes = function(){
+        shoppingbag.app.routes = {
+            routeMap: {
+                "login":{
+                    create:function(currentState){
+                        console.log('Create login widget');
+                    },
+                    destroy:function(previousState){
+                        console.log('destroy login widget');
+                    }
+                },
+                "home":{
+                    create:function(currentState){
+                        $(mainContainer).home({
+                            title:'home'
+                        });
+                        
+                    },
+                    destroy:function(previousState){
+                        $(mainContainer).home('destroy'); 
+                    }
+                },
+                "cart":{
+                    create:function(currentState){
+                        $(mainContainer).cart({
+                            title:'Cart'
+                        });
+                        
+                    },
+                    destroy:function(previousState){
+                        $(mainContainer).cart('destroy'); 
+                    }
+                },
+                "logout":{
+                    create:function(){
+
+                    },
+                    destroy:function(){
+
+                    }
+                }
+            }
+        };
+    }();
+})(this.shoppingbag, jQuery);
+
+// app initializing code for search.
+// author: Sharad Biradar
+
+// ensure our namespace
+if (!this.edum) {
+    this.edum = {};
+}
+if (!this.edum.app) {
+    this.edum.app = {};
+}
+
+if (!this.edum.app.promise) {
+    this.edum.app.promise = {};
+}
+
+(function (edum, $) {
+	edum.app.endpoints = {
+		baseUrl:"http://localhost:8888",
+		authentication:"/user/authenticate"
+	};
+})(this.edum, jQuery);
+
+// Handlebars templates.
+// author: Sharad Biradar
+
+// ensure our namespace
+if (!this.shoppingbag) {
+    this.shoppingbag = {};
+}
+if (!this.shoppingbag.app) {
+    this.shoppingbag.app = {};
+}
+
+if (!this.shoppingbag.app.promise) {
+    this.shoppingbag.app.promise = {};
+}
+
+(function(shoppingbag, $, Handlebars) {
+    Handlebars.registerHelper("getColors", function(colorsArray){
+        var colorArray = [];
+        for(var i=0;i<colorsArray.length;i++){
+            colorArray.push(colorsArray[i].name);
+        }
+        return new Handlebars.SafeString(colorArray.join());
+    });
+
+    Handlebars.registerHelper("jsonStringify", function(cartItemObject){
+        return JSON.stringify(cartItemObject);
+    });
+
+    Handlebars.registerHelper("availableColors", function(colorObject){
+        var markup = '<label class="color-box" style="background-color:'+colorObject.hexcode+'"></label>';
+        return new Handlebars.SafeString(markup);
+    });
+    Handlebars.registerHelper("createOptions", function(sizesObject){
+        var markup = '<option value='+sizesObject.name+'>'+sizesObject.name+'</option>';
+        return new Handlebars.SafeString(markup);
+    });
+    
+})(this.shoppingbag, jQuery, Handlebars);
+
+// application-wide edit dialog
+// author: Sharad Biradar
+// ensure our namespace
+/*
+	The edit dialog is a general-purpose dialog for editing content.
+	You can pass content and a function to be called before the dialog is opened.
+	The options for the edit dialog should look something like this:
+	{
+		title: 'title',
+		template: anHTMLString,
+        dialogButtons:[{
+            class:'', //it may be either primary, secondary or danger
+            type:'close', //It is close or undefined
+            text:'button text',
+            handler:callback function
+        },{
+
+        },{
+
+        }],
+        backdrop:true,
+        keyboard:false,
+        show:false,
+        beforeOpen: function() {},
+	}
+*/
+(function (shoppingbag, $) {
+    shoppingbag.app.dialog = function(options){
+        /*options = {
+            template:"html markup",
+            dialogOptions:{};
+        };*/
+        var body = $('body');
+        var shoppingbagDialog = $(body).find('.dialog-container');
+        $(shoppingbagDialog).empty();
+        shoppingbagDialog.append(options.template);
+        $(shoppingbagDialog).dialog(options.dialogOptions);
+    };
+    
+})(this.shoppingbag, jQuery);

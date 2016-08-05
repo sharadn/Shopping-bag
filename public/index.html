@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Shopping Bag</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.5.0/css/font-awesome.min.css">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
+    <link rel="stylesheet" href="dist/production.css">
+    <link rel="stylesheet" href="plugins/jquery-ui-1.11.4/jquery-ui.min.css">
+  </head>
+
+  <body> 
+    <div class="login-container"></div>
+
+    <div class="wrapper">
+      <div></div>
+      <!-- Header -->
+      <header class="main-header">
+      </header>
+      <!-- Main Container -->
+      <div class="content-wrapper">
+        <div class="container" style="width: 100% !important;">
+          <!-- Main content -->
+          <section class="content">
+            <h1 style="text-align:center;">Loading...</h1>
+          </section>
+          <!-- /.content -->
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="main-footer">
+      </footer>
+    </div>
+    <div class="dialog-container"></div>
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>-->
+    <script src="plugins/jQuery/jquery-2.2.3.min.js"></script>
+    <script src="plugins/jquery-ui-1.11.4/jquery-ui.min.js"></script>
+    <script src="plugins/handlebars-v1.3.0.js"></script>
+    <script src="dist/production.js"></script>
+    <script type="text/javascript">
+      $(function () {
+        if (!window.shoppingbag) {
+          window.shoppingbag = {};
+        }
+
+        if(!window.shoppingbag.app) {
+          window.shoppingbag.app = {};
+        }
+        shoppingbag.app.init();
+      });
+    </script>
+  </body>
+</html>

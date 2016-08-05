@@ -1,0 +1,32 @@
+<div class="cart-container shadow">
+	<div class="cart-header">Your Shopping Bag</div>	
+	<div class="cartItems"> 
+		<div class="cartItem cart-header-container"> 
+			<div class="cartItemHead">Item</div> 
+			<div class="cartItemHead">Size</div> 
+			<div class="cartItemHead">Qty</div> 
+			<div class="cartItemHead">Price</div> 
+		</div>
+		{{#each results}}
+			<div class="cartItem cart-item-row" data="{{jsonStringify this}}">
+				<div class="cartItemCell">
+					<div class="cart-item-image-container"><img src="{{image_link}}"></img></div>
+					<div class="cart-item-details">
+						<label class="item-name">{{p_name}}</label>
+						<label class="item-style">Style: {{p_style}}</label>
+						<!--<label class="item-colors">Color: {{getColors p_available_options.colors}}</label>-->
+						<label class="item-colors">Color: {{p_selected_color.name}}</label>
+						<div class="cart-edit-btns">
+							<label class="edit">Edit</label>
+							<label class="remove">Remove</label>
+							<label class="save">Save for Later</label>
+						</div>
+					</div>
+				</div>
+				<div class="cartItemCell">{{p_selected_size.code}}</div> 
+				<div class="cartItemCell"><input type="text" name="size" id="item-qty" value="{{p_quantity}}"></input></div> 
+				<div class="cartItemCell">{{c_currency}} {{p_originalprice}}</div> 
+			</div> 
+		{{/each}}
+	</div>
+</div>
